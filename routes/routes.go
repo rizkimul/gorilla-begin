@@ -1,18 +1,24 @@
 package routes
 
 import (
-	"io"
 	"log"
 	"net/http"
 
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/rizkimul/gorilla-begin/v2/handler"
+	"github.com/rizkimul/gorilla-begin/v2/middleware"
 )
 
 type App struct {
 	Router *mux.Router
 	Logger *log.Logger
+}
+
+func (a *App) Run() {
+	a.SetupRouter()
+	a.Router.Use(middleware.LoggingMiddleware)
+	log.Println("Starting Server")
+	a.Logger.Fatal(http.ListenAndServe(":1323", a.Router))
 }
 
 func (a *App) SetupRouter() {
@@ -24,8 +30,4 @@ func (a *App) SetupRouter() {
 	router.Path("/get").HandlerFunc(handler.GetUserbyId).Methods("GET")
 	router.Path("/update").HandlerFunc(handler.UpdateUser).Methods("PUT")
 	router.Path("/del").HandlerFunc(handler.DeleteUser).Methods("DELETE")
-}
-
-func (a *App) CreateLoggingRouter(out io.Writer) http.Handler {
-	return handlers.LoggingHandler(out, a.Router)
 }

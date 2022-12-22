@@ -7,22 +7,36 @@ import (
 
 	// "strings"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Person struct {
 	Id          string `json:"id" validate:"isdefault"`
-	Firstname   string `json:"firstname" validate:"required,alpha"`
-	Lastname    string `json:"lastname" validate:"required,alpha"`
+	Name        string `json:"firstname" validate:"required,alpha"`
 	Email       string `json:"email" validate:"required,email"`
+	Password    string `json:"password" validate:"required"`
 	Phonenumber string `json:"phone" validate:"required,gte=11,lt=12,numeric"`
 }
 
 var person = []Person{}
 
+func Hashpassword(pass string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.MinCost)
+	return string(bytes), err
+}
+
 func GetUsers(w http.ResponseWriter, r *http.Request) {
+	for i := 0; i < len(person); i++ {
+		hash, _ := Hashpassword(person[i].Password)
+		person[i].Password = hash
+	}
 	w.Header().Add("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(person); err != nil {
-		panic(err.Error())
+	err := json.NewEncoder(w).Encode(person)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Error in encode response object", http.StatusBadRequest)
+		return
 	}
 }
 
@@ -63,6 +77,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			if err := json.NewEncoder(w).Encode(errs); err != nil {
+				panic(err.Error())
 			}
 			return
 
@@ -87,6 +102,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	// 	}
 	// 	return
 	// }
+	u.Id = uuid.NewString()
 
 	person = append(person, u)
 
