@@ -25,9 +25,9 @@ func (a *App) SetupRouter() {
 	a.Router = mux.NewRouter()
 
 	router := a.Router.PathPrefix("/users").Subrouter()
-	router.Path("").HandlerFunc(handler.GetUsers).Methods("GET")
-	router.Path("").HandlerFunc(handler.CreateUser).Methods("POST")
-	router.Path("/get").HandlerFunc(handler.GetUserbyId).Methods("GET")
+	router.Path("/getall").HandlerFunc(handler.GetUsers).Methods("GET")
+	router.Path("/create").HandlerFunc(handler.CreateUser).Methods("POST")
+	router.Path("/getbyId/").HandlerFunc(handler.GetUserbyId).Methods("GET")
 	router.Path("/update").HandlerFunc(handler.UpdateUser).Methods("PUT")
 	router.Path("/del").HandlerFunc(handler.DeleteUser).Methods("DELETE")
 }
