@@ -1,8 +1,11 @@
 package main
 
-import "github.com/rizkimul/gorilla-begin/v2/routes"
+import (
+	"github.com/rizkimul/gorilla-begin/v2/routes"
+)
+
+var route routes.Routes = routes.NewRoutes()
 
 func main() {
-	a := routes.App{}
-	a.Run()
+	route.Run()
 }

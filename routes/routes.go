@@ -7,14 +7,28 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rizkimul/gorilla-begin/v2/handler"
 	"github.com/rizkimul/gorilla-begin/v2/middleware"
+	"github.com/rizkimul/gorilla-begin/v2/repository"
+	"github.com/rizkimul/gorilla-begin/v2/services"
 )
 
+type Routes interface {
+	Run()
+}
+
 type App struct {
-	Router *mux.Router
-	Logger *log.Logger
+	Router      *mux.Router
+	Logger      *log.Logger
+	UserService services.Services
+	Repo        repository.Repository
+}
+
+func NewRoutes() Routes {
+	return &App{}
 }
 
 func (a *App) Run() {
+	a.Repo = repository.NewRepository()
+	a.UserService = services.NewServices(a.Repo)
 	a.SetupRouter()
 	a.Router.Use(middleware.LoggingMiddleware)
 	log.Println("Starting Server")
@@ -23,11 +37,12 @@ func (a *App) Run() {
 
 func (a *App) SetupRouter() {
 	a.Router = mux.NewRouter()
+	var handlerfun handler.Handler = handler.NewHandler(a.UserService, a.Repo)
 
 	router := a.Router.PathPrefix("/users").Subrouter()
-	router.Path("/getall").HandlerFunc(handler.GetUsers).Methods("GET")
-	router.Path("/create").HandlerFunc(handler.CreateUser).Methods("POST")
-	router.Path("/getbyId/").HandlerFunc(handler.GetUserbyId).Methods("GET")
-	router.Path("/update").HandlerFunc(handler.UpdateUser).Methods("PUT")
-	router.Path("/del").HandlerFunc(handler.DeleteUser).Methods("DELETE")
+	router.Path("/getall").HandlerFunc(handlerfun.GetUsers).Methods("GET")
+	router.Path("/create").HandlerFunc(handlerfun.CreateUser).Methods("POST")
+	router.Path("/getbyId/").HandlerFunc(handlerfun.GetUserbyId).Methods("GET")
+	router.Path("/update").HandlerFunc(handlerfun.UpdateUser).Methods("PUT")
+	router.Path("/del").HandlerFunc(handlerfun.DeleteUser).Methods("DELETE")
 }

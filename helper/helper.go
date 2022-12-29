@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/rizkimul/gorilla-begin/v2/model"
 )
 
 func Validation(u interface{}) []string {
@@ -31,13 +30,4 @@ func Validation(u interface{}) []string {
 		}
 	}
 	return errs
-}
-
-func IndexbyID(persons []model.Person, id string) int {
-	for i := 0; i < len(persons); i++ {
-		if persons[i].Id == id {
-			return i
-		}
-	}
-	return -1
 }

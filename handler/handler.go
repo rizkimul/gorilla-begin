@@ -7,46 +7,60 @@ import (
 
 	// "strings"
 	"github.com/google/uuid"
+	"github.com/rizkimul/gorilla-begin/v2/entity"
 	"github.com/rizkimul/gorilla-begin/v2/helper"
-	"github.com/rizkimul/gorilla-begin/v2/model"
+	"github.com/rizkimul/gorilla-begin/v2/repository"
 	"github.com/rizkimul/gorilla-begin/v2/response"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/rizkimul/gorilla-begin/v2/services"
 )
 
-var person = []model.Person{}
-
-func Hashpassword(pass string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.MinCost)
-	return string(bytes), err
+type Handler interface {
+	GetUsers(w http.ResponseWriter, r *http.Request)
+	CreateUser(w http.ResponseWriter, r *http.Request)
+	GetUserbyId(w http.ResponseWriter, r *http.Request)
+	UpdateUser(w http.ResponseWriter, r *http.Request)
+	DeleteUser(w http.ResponseWriter, r *http.Request)
 }
 
-func GetUsers(w http.ResponseWriter, r *http.Request) {
-	for i := 0; i < len(person); i++ {
-		hash, _ := Hashpassword(person[i].Password)
-		person[i].Password = hash
+type handler struct {
+	srvc  services.Services
+	repos repository.Repository
+}
+
+// var srvc services.Services = services.NewServices()
+
+func NewHandler(srvc services.Services, repos repository.Repository) Handler {
+	return &handler{
+		srvc:  srvc,
+		repos: repos,
+	}
+}
+
+func (h *handler) GetUsers(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Content-Type", "application/json")
+	person, err := h.srvc.Getall()
+	if err != nil {
+		log.Println(err)
+		return
 	}
 	result := []response.Response{}
 
-	for _, v := range *&person {
+	for _, v := range person {
 		res := response.Response{
 			Id:          v.Id,
 			Name:        v.Name,
 			Email:       v.Email,
 			Phonenumber: v.Phonenumber,
 		}
-		*&result = append(*&result, res)
+		result = append(result, res)
 	}
-
-	w.Header().Add("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(result)
-	if err != nil {
-		log.Println(err)
-		return
-	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(result)
 }
 
-func CreateUser(w http.ResponseWriter, r *http.Request) {
-	u := model.Person{}
+func (h *handler) CreateUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Content-Type", "application/json")
+	var u entity.Person
 	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
 		log.Println(err)
 		return
@@ -54,7 +68,6 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	validate := helper.Validation(u)
 	if len(validate) > 0 {
-		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		if err := json.NewEncoder(w).Encode(validate); err != nil {
 			log.Println(err.Error())
@@ -63,44 +76,38 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	} else {
 		u.Id = uuid.NewString()
 
-		person = append(person, u)
-
-		response, err := json.Marshal(&u)
-		if err != nil {
-			log.Println(err.Error())
-		}
-		w.Header().Add("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		w.Write(response)
+		h.srvc.Insert(&u)
 	}
 
 }
 
-func GetUserbyId(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
-	index := helper.IndexbyID(person, id)
-
-	if index < 0 {
-		http.Error(w, "User not found", http.StatusNotFound)
-		return
-	}
-
+func (h *handler) GetUserbyId(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(person[index]); err != nil {
+	id := r.URL.Query().Get("id")
+	person, err := h.srvc.GetById(id)
+	if err != nil {
 		log.Println(err.Error())
 		return
 	}
+	result := []response.Response{}
+
+	for _, v := range person {
+		res := response.Response{
+			Id:          v.Id,
+			Name:        v.Name,
+			Email:       v.Email,
+			Phonenumber: v.Phonenumber,
+		}
+		result = append(result, res)
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(result)
 }
 
-func UpdateUser(w http.ResponseWriter, r *http.Request) {
+func (h *handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
-	index := helper.IndexbyID(person, id)
-	if index < 0 {
-		http.Error(w, "User not found", http.StatusNotFound)
-		return
-	}
 
-	u := model.Person{}
+	var u entity.Person
 	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
 		log.Println(err.Error())
 	}
@@ -114,7 +121,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		person[index] = u
+		h.srvc.Update(id, &u)
 		w.Header().Add("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(&u); err != nil {
 			log.Println(err.Error())
@@ -123,15 +130,10 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func DeleteUser(w http.ResponseWriter, r *http.Request) {
+func (h *handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
-	index := helper.IndexbyID(person, id)
 
-	if index < 0 {
-		http.Error(w, "User not found", http.StatusNotFound)
-	}
-
-	person = append(person[:index], person[index+1:]...)
+	h.srvc.Delete(id)
 
 	w.WriteHeader(http.StatusOK)
 }
