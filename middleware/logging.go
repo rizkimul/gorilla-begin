@@ -7,6 +7,16 @@ import (
 	"github.com/gorilla/handlers"
 )
 
-func LoggingMiddleware(next http.Handler) http.Handler {
+type Middleware interface {
+	LoggingMiddleware(next http.Handler) http.Handler
+}
+
+type middleware struct{}
+
+func NewMiddleware() Middleware {
+	return &middleware{}
+}
+
+func (*middleware) LoggingMiddleware(next http.Handler) http.Handler {
 	return handlers.LoggingHandler(os.Stdout, next)
 }

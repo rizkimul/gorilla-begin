@@ -2,7 +2,6 @@ package repository
 
 import (
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
 	"github.com/rizkimul/gorilla-begin/v2/entity"
 )
 
@@ -14,7 +13,9 @@ type Repository interface {
 	DeleteUser(id string) (int64, error)
 }
 
-type repo struct{}
+type repo struct {
+	DB *sqlx.DB
+}
 
 const (
 	getUserAll  = "SELECT * FROM person"
@@ -24,49 +25,43 @@ const (
 	deleteUser  = "DELETE FROM person WHERE id=$1"
 )
 
-func NewRepository() Repository {
-	return &repo{}
+func NewRepository(db *sqlx.DB) Repository {
+	return &repo{
+		DB: db,
+	}
 }
 
-var db, err = sqlx.Connect("postgres", "user=postgres password=root dbname=db_golang sslmode=disable")
-
-func (*repo) Getuserall() ([]entity.Person, error) {
-	defer db.Close()
+func (r *repo) Getuserall() ([]entity.Person, error) {
 	person := []entity.Person{}
-	err = db.Select(&person, getUserAll)
+	err := r.DB.Select(&person, getUserAll)
 
 	return person, err
 }
 
-func (*repo) GetUserById(id string) ([]entity.Person, error) {
-	defer db.Close()
-
+func (r *repo) GetUserById(id string) ([]entity.Person, error) {
 	person := []entity.Person{}
 
-	err = db.Select(&person, getUserById, id)
+	err := r.DB.Select(&person, getUserById, id)
 	return person, err
 }
 
-func (*repo) InsertUser(person *entity.Person) (*entity.Person, error) {
-	defer db.Close()
+func (r *repo) InsertUser(person *entity.Person) (*entity.Person, error) {
 	var id string
-	err = db.QueryRow(insertUser, person.Name, person.Email, person.Password, person.Phonenumber).Scan(&id)
+	err := r.DB.QueryRow(insertUser, person.Name, person.Email, person.Password, person.Phonenumber).Scan(&id)
 
 	return person, err
 }
 
-func (*repo) UpdateUser(id string, person *entity.Person) (int64, error) {
-	defer db.Close()
-	res, err := db.Exec(updateUser, person.Name, person.Email, person.Password, person.Phonenumber, id)
+func (r *repo) UpdateUser(id string, person *entity.Person) (int64, error) {
+	res, err := r.DB.Exec(updateUser, person.Name, person.Email, person.Password, person.Phonenumber, id)
 
 	rowsAfffected, err := res.RowsAffected()
 
 	return rowsAfffected, err
 }
 
-func (*repo) DeleteUser(id string) (int64, error) {
-	defer db.Close()
-	res, err := db.Exec(deleteUser, id)
+func (r *repo) DeleteUser(id string) (int64, error) {
+	res, err := r.DB.Exec(deleteUser, id)
 
 	RowsAffected, err := res.RowsAffected()
 
