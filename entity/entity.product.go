@@ -9,5 +9,4 @@ type Product struct {
 	Price               float64   `schema:"price" validate:"required,numeric"`
 	Product_image       string    `schema:"image" validate:"required"`
 	Created_at          time.Time `schema:"created_at"`
-	Updated_at          time.Time `schema:"updated_at"`
 }
