@@ -3,10 +3,10 @@ package entity
 import "time"
 
 type Product struct {
-	Id                  string    `schema:"id" validate:"isdefault"`
-	Product_name        string    `schema:"product_name" validate:"required"`
-	Product_description string    `schema:"product_desc" validate:"required"`
-	Price               float64   `schema:"price" validate:"required,numeric"`
-	Product_image       string    `schema:"image" validate:"required"`
-	Created_at          time.Time `schema:"created_at"`
+	Id                 string    `schema:"id" validate:"isdefault" db:"id"`
+	ProductName        string    `schema:"product_name" validate:"required" db:"product_name"`
+	ProductDescription string    `schema:"product_desc" validate:"required" db:"product_description"`
+	Price              float64   `schema:"price" validate:"required,numeric" db:"price"`
+	ProductImage       string    `schema:"image" validate:"required" db:"product_image"`
+	CreatedAt          time.Time `schema:"created_at" db:"created_at"`
 }

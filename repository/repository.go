@@ -7,10 +7,11 @@ import (
 
 type Repository interface {
 	Getuserall() ([]entity.Person, error)
-	GetUserById(id string) ([]entity.Person, error)
+	GetUserById(id string) (entity.Person, error)
 	InsertUser(person *entity.Person) (*entity.Person, error)
 	UpdateUser(id string, person *entity.Person) (int64, error)
 	DeleteUser(id string) (int64, error)
+	Login(name string) (entity.Person, error)
 }
 
 type repo struct {
@@ -18,11 +19,12 @@ type repo struct {
 }
 
 const (
-	getUserAll  = "SELECT * FROM person"
-	getUserById = "SELECT * FROM person WHERE id=$1"
-	insertUser  = "INSERT INTO person (name, email, password, phonenumber) VALUES ($1, $2, $3, $4)"
-	updateUser  = "UPDATE person SET (name, email, password, phonenumber) = ($1, $2, $3, $4) WHERE id=$5"
-	deleteUser  = "DELETE FROM person WHERE id=$1"
+	getUserAll    = "SELECT * FROM person"
+	getUserById   = "SELECT * FROM person WHERE id=$1"
+	insertUser    = "INSERT INTO person (name, email, password, phonenumber) VALUES ($1, $2, $3, $4)"
+	updateUser    = "UPDATE person SET (name, email, password, phonenumber) = ($1, $2, $3, $4) WHERE id=$5"
+	deleteUser    = "DELETE FROM person WHERE id=$1"
+	getUserbyName = "SELECT * FROM person WHERE name=$1"
 )
 
 func NewRepository(db *sqlx.DB) Repository {
@@ -38,22 +40,22 @@ func (r *repo) Getuserall() ([]entity.Person, error) {
 	return person, err
 }
 
-func (r *repo) GetUserById(id string) ([]entity.Person, error) {
-	person := []entity.Person{}
+func (r *repo) GetUserById(id string) (entity.Person, error) {
+	person := entity.Person{}
 
-	err := r.DB.Select(&person, getUserById, id)
+	err := r.DB.Get(&person, getUserById, id)
 	return person, err
 }
 
 func (r *repo) InsertUser(person *entity.Person) (*entity.Person, error) {
 	var id string
-	err := r.DB.QueryRow(insertUser, person.Name, person.Email, person.Password, person.Phonenumber).Scan(&id)
+	err := r.DB.QueryRow(insertUser, person.Name, person.Email, person.Password, person.PhoneNumber).Scan(&id)
 
 	return person, err
 }
 
 func (r *repo) UpdateUser(id string, person *entity.Person) (int64, error) {
-	res, err := r.DB.Exec(updateUser, person.Name, person.Email, person.Password, person.Phonenumber, id)
+	res, err := r.DB.Exec(updateUser, person.Name, person.Email, person.Password, person.PhoneNumber, id)
 
 	rowsAfffected, err := res.RowsAffected()
 
@@ -66,4 +68,10 @@ func (r *repo) DeleteUser(id string) (int64, error) {
 	RowsAffected, err := res.RowsAffected()
 
 	return RowsAffected, err
+}
+
+func (r *repo) Login(name string) (entity.Person, error) {
+	person := entity.Person{}
+	err := r.DB.Get(&person, getUserbyName, name)
+	return person, err
 }

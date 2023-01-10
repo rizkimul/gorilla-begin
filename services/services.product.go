@@ -7,7 +7,7 @@ import (
 
 type ProductServices interface {
 	Getallproduct() ([]entity.Product, error)
-	GetproductById(id string) ([]entity.Product, error)
+	GetproductById(id string) (entity.Product, error)
 	Insertproduct(product *entity.Product) (*entity.Product, error)
 	Updateproduct(id string, product *entity.Product) (int64, error)
 	Deleteproduct(id string) (int64, error)
@@ -29,7 +29,7 @@ func (s *prdctsvc) Getallproduct() ([]entity.Product, error) {
 	return s.prdctrepo.GetProductall()
 }
 
-func (s *prdctsvc) GetproductById(id string) ([]entity.Product, error) {
+func (s *prdctsvc) GetproductById(id string) (entity.Product, error) {
 	return s.prdctrepo.GetProductById(id)
 }
 

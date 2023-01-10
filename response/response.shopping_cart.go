@@ -1,10 +1,10 @@
 package response
 
 type ShoppingCart struct {
-	Cart_name     string
-	Product_name  string
-	Price         float64
-	Product_image string
-	Qty_product   int
-	Total_price   float64
+	CartName     string  `db:"cart_name"`
+	ProductName  string  `db:"product_name"`
+	Price        float64 `db:"price"`
+	ProductImage string  `db:"product_image"`
+	QtyProduct   int     `db:"qty_product"`
+	TotalPrice   float64 `db:"total_price"`
 }

@@ -24,14 +24,16 @@ type SPCartHandler interface {
 }
 
 type spcarthandler struct {
-	srvc  services.SPCartServices
-	repos repository.SPCartRepository
+	srvc   services.SPCartServices
+	repos  repository.SPCartRepository
+	helper helper.Helper
 }
 
-func NewSPCartHandler(srvc services.SPCartServices, repos repository.SPCartRepository) SPCartHandler {
+func NewSPCartHandler(srvc services.SPCartServices, repos repository.SPCartRepository, helper helper.Helper) SPCartHandler {
 	return &spcarthandler{
-		srvc:  srvc,
-		repos: repos,
+		srvc:   srvc,
+		repos:  repos,
+		helper: helper,
 	}
 }
 
@@ -39,11 +41,14 @@ func (h *spcarthandler) GetSPCarts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	spcart, err := h.srvc.Getall()
 	if err != nil {
-		log.Println(err)
+		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "200", "data": err.Error()}
+		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
+		return
+	} else {
+		res := map[string]interface{}{"message": "OK", "is_success": true, "status": "200", "data": spcart}
+		h.helper.ResponseJSON(w, http.StatusOK, res)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(spcart)
 }
 
 func (h *spcarthandler) CreateSPCart(w http.ResponseWriter, r *http.Request) {
@@ -55,30 +60,12 @@ func (h *spcarthandler) CreateSPCart(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	id := strconv.Itoa(u.Product_id)
+	id := strconv.Itoa(u.ProductId)
 	p, _ := repository.NewProductRepository(db).GetProductById(id)
-
-	for _, v := range p {
-		total := u.Qty_product * int(v.Price)
-		u.Total_price = float64(total)
-	}
-
-	validate := helper.Validation(u)
-	if len(validate) > 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		if err := json.NewEncoder(w).Encode(validate); err != nil {
-			log.Println(err.Error())
-			return
-		}
-	} else {
-		insert, err := h.srvc.Insert(&u)
-		if err != nil {
-			log.Println(err.Error())
-			return
-		}
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(insert)
-	}
+	u.TotalPrice = h.helper.CountTotal(u.QtyProduct, int(p.Price))
+	h.srvc.Insert(&u)
+	res := map[string]interface{}{"message": "OK", "is_success": true, "status": "200"}
+	h.helper.ResponseJSON(w, http.StatusOK, res)
 
 }
 
@@ -87,10 +74,14 @@ func (h *spcarthandler) GetSPCartbyId(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	spcart, err := h.srvc.GetById(id)
 	if err != nil {
-		log.Println(err.Error())
+		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
+		h.helper.ResponseJSON(w, http.StatusInternalServerError, res)
+		return
+	} else {
+		res := map[string]interface{}{"message": "OK", "is_success": true, "status": "200", "data": spcart}
+		h.helper.ResponseJSON(w, http.StatusOK, res)
 		return
 	}
-	json.NewEncoder(w).Encode(spcart)
 }
 
 func (h *spcarthandler) UpdateSPCart(w http.ResponseWriter, r *http.Request) {
@@ -100,24 +91,15 @@ func (h *spcarthandler) UpdateSPCart(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
 		log.Println(err.Error())
 	}
-
-	validate := helper.Validation(u)
-	if len(validate) > 0 {
-		w.Header().Add("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		if err := json.NewEncoder(w).Encode(validate); err != nil {
-			log.Println(err.Error())
-			return
-		}
+	err := h.srvc.Update(id, &u)
+	if err != nil {
+		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
+		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
+		return
 	} else {
-		update, err := h.srvc.Update(id, &u)
-		if err != nil {
-			log.Println(err.Error())
-			return
-		}
-		w.Header().Add("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(update)
+		res := map[string]interface{}{"message": "OK", "is_success": true, "status": "200", "data": u}
+		h.helper.ResponseJSON(w, http.StatusOK, res)
+		return
 	}
 }
 
@@ -126,9 +108,12 @@ func (h *spcarthandler) DeleteSPCart(w http.ResponseWriter, r *http.Request) {
 
 	delete, err := h.srvc.Delete(id)
 	if err != nil {
-		log.Println(err.Error())
+		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
+		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
+		return
+	} else {
+		res := map[string]interface{}{"message": "OK", "is_success": true, "status": "200", "data": delete}
+		h.helper.ResponseJSON(w, http.StatusOK, res)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(delete)
 }

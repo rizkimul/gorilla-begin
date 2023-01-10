@@ -8,7 +8,7 @@ import (
 
 type RepositoryProduct interface {
 	GetProductall() ([]entity.Product, error)
-	GetProductById(id string) ([]entity.Product, error)
+	GetProductById(id string) (entity.Product, error)
 	InsertProduct(product *entity.Product) (*entity.Product, error)
 	UpdateProduct(id string, person *entity.Product) (int64, error)
 	DeleteProduct(id string) (int64, error)
@@ -32,8 +32,6 @@ func NewProductRepository(db *sqlx.DB) RepositoryProduct {
 	}
 }
 
-// var db, err = sqlx.Connect("postgres", "Product=postgres password=root dbname=db_golang sslmode=disable")
-
 func (rp *repoProduct) GetProductall() ([]entity.Product, error) {
 	product := []entity.Product{}
 	err := rp.DB.Select(&product, getProductAll)
@@ -41,22 +39,22 @@ func (rp *repoProduct) GetProductall() ([]entity.Product, error) {
 	return product, err
 }
 
-func (rp *repoProduct) GetProductById(id string) ([]entity.Product, error) {
-	product := []entity.Product{}
+func (rp *repoProduct) GetProductById(id string) (entity.Product, error) {
+	product := entity.Product{}
 
-	err := rp.DB.Select(&product, getProductById, id)
+	err := rp.DB.Get(&product, getProductById, id)
 	return product, err
 }
 
 func (rp *repoProduct) InsertProduct(product *entity.Product) (*entity.Product, error) {
 	var id string
-	err := rp.DB.QueryRow(insertProduct, product.Product_name, product.Product_description, product.Price, product.Product_image).Scan(&id)
+	err := rp.DB.QueryRow(insertProduct, product.ProductName, product.ProductDescription, product.Price, product.ProductImage).Scan(&id)
 
 	return product, err
 }
 
 func (rp *repoProduct) UpdateProduct(id string, product *entity.Product) (int64, error) {
-	res, err := rp.DB.Exec(updateProduct, product.Product_name, product.Product_description, product.Price, product.Product_image, id)
+	res, err := rp.DB.Exec(updateProduct, product.ProductName, product.ProductDescription, product.Price, product.ProductImage, id)
 
 	rowsAfffected, err := res.RowsAffected()
 

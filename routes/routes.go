@@ -8,6 +8,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/rizkimul/gorilla-begin/v2/handler"
+	"github.com/rizkimul/gorilla-begin/v2/helper"
 	"github.com/rizkimul/gorilla-begin/v2/middleware"
 	"github.com/rizkimul/gorilla-begin/v2/repository"
 	"github.com/rizkimul/gorilla-begin/v2/services"
@@ -29,6 +30,7 @@ type App struct {
 	CartRepo      repository.CartRepository
 	SPCartRepo    repository.SPCartRepository
 	Middleware    middleware.Middleware
+	Helper        helper.Helper
 }
 
 func NewRoutes() Routes {
@@ -53,6 +55,7 @@ CREATE TABLE IF NOT EXISTS cart (
 		);
 
 CREATE TABLE IF NOT EXISTS shopping_cart (
+		id serial,
 		cart_id INT,
 		product_id INT,
 		qty_product INT,
@@ -75,13 +78,14 @@ func (a *App) Run() {
 	Db.MustExec(schema)
 	a.Repo = repository.NewRepository(Db)
 	a.ProdRepo = repository.NewProductRepository(Db)
-	a.CartRepo = repository.NewCartRepository(Db)
-	a.SPCartRepo = repository.NewSPCartRepository(Db)
+	a.SPCartRepo = repository.NewSPCartRepository(Db, a.ProdRepo)
+	a.CartRepo = repository.NewCartRepository(Db, a.SPCartRepo, a.ProdRepo)
 	a.UserService = services.NewServices(a.Repo)
 	a.ProdService = services.NewProductServices(a.ProdRepo)
-	a.CartService = services.NewCartServices(a.CartRepo)
+	a.CartService = services.NewCartServices(a.CartRepo, a.SPCartRepo)
 	a.SPCartService = services.NewSPCartServices(a.SPCartRepo)
-	a.Middleware = middleware.NewMiddleware()
+	a.Helper = helper.NewHelper()
+	a.Middleware = middleware.NewMiddleware(a.Helper)
 	a.SetupRouter()
 	a.Router.Use(a.Middleware.LoggingMiddleware)
 	log.Println("Starting Server")
@@ -90,17 +94,19 @@ func (a *App) Run() {
 
 func (a *App) SetupRouter() {
 	a.Router = mux.NewRouter()
-	var handlerfun handler.Handler = handler.NewHandler(a.UserService, a.Repo)
-	var prodhandler handler.ProductHandler = handler.NewProductHandler(a.ProdService, a.ProdRepo)
-	var carthandler handler.CartHandler = handler.NewCartHandler(a.CartService, a.CartRepo)
-	var spcarthandler handler.SPCartHandler = handler.NewSPCartHandler(a.SPCartService, a.SPCartRepo)
+	var handlerfun handler.Handler = handler.NewHandler(a.UserService, a.Repo, a.Helper)
+	var prodhandler handler.ProductHandler = handler.NewProductHandler(a.ProdService, a.ProdRepo, a.Helper)
+	var carthandler handler.CartHandler = handler.NewCartHandler(a.CartService, a.CartRepo, a.Helper)
+	var spcarthandler handler.SPCartHandler = handler.NewSPCartHandler(a.SPCartService, a.SPCartRepo, a.Helper)
 
 	router := a.Router.PathPrefix("/users").Subrouter()
 	router.Path("/getall").HandlerFunc(handlerfun.GetUsers).Methods("GET")
-	router.Path("/create").HandlerFunc(handlerfun.CreateUser).Methods("POST")
+	router.Path("/register").HandlerFunc(handlerfun.CreateUser).Methods("POST")
+	router.Path("/login").HandlerFunc(handlerfun.Login).Methods("POST")
 	router.Path("/getbyId").HandlerFunc(handlerfun.GetUserbyId).Methods("GET")
 	router.Path("/update").HandlerFunc(handlerfun.UpdateUser).Methods("PUT")
 	router.Path("/del").HandlerFunc(handlerfun.DeleteUser).Methods("DELETE")
+	router.Path("/print").HandlerFunc(handlerfun.PrinData).Methods("GET")
 
 	prod := a.Router.PathPrefix("/product").Subrouter()
 	prod.Path("/getall").HandlerFunc(prodhandler.GetProducts).Methods("GET")
@@ -108,6 +114,7 @@ func (a *App) SetupRouter() {
 	prod.Path("/getbyId").HandlerFunc(prodhandler.GetProductbyId).Methods("GET")
 	prod.Path("/update").HandlerFunc(prodhandler.UpdateProduct).Methods("PUT")
 	prod.Path("/del").HandlerFunc(prodhandler.DeleteProduct).Methods("DELETE")
+	prod.Use(a.Middleware.JWT)
 
 	cart := a.Router.PathPrefix("/cart").Subrouter()
 	cart.Path("/getall").HandlerFunc(carthandler.GetCarts).Methods("GET")

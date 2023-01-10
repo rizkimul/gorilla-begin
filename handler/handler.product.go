@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 	"github.com/gorilla/schema"
 	"github.com/rizkimul/gorilla-begin/v2/entity"
+	"github.com/rizkimul/gorilla-begin/v2/helper"
 	"github.com/rizkimul/gorilla-begin/v2/repository"
 	"github.com/rizkimul/gorilla-begin/v2/response"
 	"github.com/rizkimul/gorilla-begin/v2/services"
@@ -27,12 +27,14 @@ type ProductHandler interface {
 type productHandler struct {
 	srvc        services.ProductServices
 	productRepo repository.RepositoryProduct
+	helper      helper.Helper
 }
 
-func NewProductHandler(srvc services.ProductServices, productRepo repository.RepositoryProduct) ProductHandler {
+func NewProductHandler(srvc services.ProductServices, productRepo repository.RepositoryProduct, helper helper.Helper) ProductHandler {
 	return &productHandler{
 		srvc:        srvc,
 		productRepo: productRepo,
+		helper:      helper,
 	}
 }
 
@@ -40,23 +42,25 @@ func (h *productHandler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	product, err := h.srvc.Getallproduct()
 	if err != nil {
-		log.Println(err)
+		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
+		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
+	} else {
+		result := []response.Product{}
+
+		for _, v := range product {
+			res := response.Product{
+				Id:                  v.Id,
+				Product_name:        v.ProductName,
+				Product_description: v.ProductDescription,
+				Product_image:       v.ProductImage,
+				Price:               v.Price,
+			}
+			result = append(result, res)
+		}
+		res := map[string]interface{}{"message": "OK", "is_success": true, "status": "200", "data": result}
+		h.helper.ResponseJSON(w, http.StatusOK, res)
 		return
 	}
-	result := []response.Product{}
-
-	for _, v := range product {
-		res := response.Product{
-			Id:                  v.Id,
-			Product_name:        v.Product_name,
-			Product_description: v.Product_description,
-			Product_image:       v.Product_image,
-			Price:               v.Price,
-		}
-		result = append(result, res)
-	}
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(result)
 }
 
 func (h *productHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
@@ -77,15 +81,14 @@ func (h *productHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	resp, _ := cld.Upload.Upload(ctx, file, uploader.UploadParams{})
 	err = decoder.Decode(&product, r.PostForm)
-	product.Product_image = resp.SecureURL
+	product.ProductImage = resp.SecureURL
 	if err != nil {
 		log.Println(err.Error())
 		return
 	}
-
 	h.srvc.Insertproduct(&product)
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(product)
+	res := map[string]interface{}{"message": "Data Successfully Inserted", "is_success": true, "status": "201", "data": product}
+	h.helper.ResponseJSON(w, http.StatusOK, res)
 
 }
 
@@ -94,23 +97,14 @@ func (h *productHandler) GetProductbyId(w http.ResponseWriter, r *http.Request) 
 	id := r.URL.Query().Get("id")
 	product, err := h.srvc.GetproductById(id)
 	if err != nil {
-		log.Println(err.Error())
+		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
+		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
+		return
+	} else {
+		res := map[string]interface{}{"message": "OK", "is_success": true, "status": "200", "data": product}
+		h.helper.ResponseJSON(w, http.StatusOK, res)
 		return
 	}
-	result := []response.Product{}
-
-	for _, v := range product {
-		res := response.Product{
-			Id:                  v.Id,
-			Product_name:        v.Product_name,
-			Product_description: v.Product_description,
-			Product_image:       v.Product_image,
-			Price:               v.Price,
-		}
-		result = append(result, res)
-	}
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(result)
 }
 
 func (h *productHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
@@ -132,22 +126,34 @@ func (h *productHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	resp, _ := cld.Upload.Upload(ctx, file, uploader.UploadParams{})
 	err = decoder.Decode(&product, r.PostForm)
-	product.Product_image = resp.SecureURL
+	product.ProductImage = resp.SecureURL
 	if err != nil {
 		log.Println(err.Error())
 		return
 	}
-
-	h.srvc.Updateproduct(id, &product)
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(product)
-
+	_, err = h.srvc.Updateproduct(id, &product)
+	if err != nil {
+		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
+		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
+		return
+	} else {
+		res := map[string]interface{}{"message": "Data Updated", "is_success": true, "status": "200", "data": product}
+		h.helper.ResponseJSON(w, http.StatusOK, res)
+		return
+	}
 }
 
 func (h *productHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 
-	h.srvc.Deleteproduct(id)
-
-	w.WriteHeader(http.StatusOK)
+	_, err := h.srvc.Deleteproduct(id)
+	if err != nil {
+		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
+		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
+		return
+	} else {
+		res := map[string]interface{}{"message": "Data Deleted", "is_success": true, "status": "200"}
+		h.helper.ResponseJSON(w, http.StatusOK, res)
+		return
+	}
 }

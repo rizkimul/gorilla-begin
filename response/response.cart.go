@@ -1,6 +1,8 @@
 package response
 
 type Cart struct {
-	Id        int
-	Cart_name string
+	Status     int         `json:"status"`
+	Is_success bool        `json:"is_success"`
+	Message    string      `json:"message"`
+	Data       interface{} `json:"data"`
 }

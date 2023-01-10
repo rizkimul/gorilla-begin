@@ -10,7 +10,6 @@ import (
 	"github.com/rizkimul/gorilla-begin/v2/entity"
 	"github.com/rizkimul/gorilla-begin/v2/helper"
 	"github.com/rizkimul/gorilla-begin/v2/repository"
-	"github.com/rizkimul/gorilla-begin/v2/response"
 	"github.com/rizkimul/gorilla-begin/v2/services"
 )
 
@@ -23,37 +22,31 @@ type CartHandler interface {
 }
 
 type carthandler struct {
-	srvc  services.CartServices
-	repos repository.CartRepository
+	srvc   services.CartServices
+	repos  repository.CartRepository
+	helper helper.Helper
 }
 
 // var srvc services.Services = services.NewServices()
 
-func NewCartHandler(srvc services.CartServices, repos repository.CartRepository) CartHandler {
+func NewCartHandler(srvc services.CartServices, repos repository.CartRepository, helper helper.Helper) CartHandler {
 	return &carthandler{
-		srvc:  srvc,
-		repos: repos,
+		srvc:   srvc,
+		repos:  repos,
+		helper: helper,
 	}
 }
 
 func (h *carthandler) GetCarts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
-	person, err := h.srvc.Getall()
+	cart, err := h.srvc.Getall()
 	if err != nil {
-		log.Println(err)
-		return
+		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
+		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
+	} else {
+		res := map[string]interface{}{"message": "OK", "is_success": true, "status": "200", "data": cart}
+		h.helper.ResponseJSON(w, http.StatusOK, res)
 	}
-	result := []response.Cart{}
-
-	for _, v := range person {
-		res := response.Cart{
-			Id:        v.Id,
-			Cart_name: v.Cart_name,
-		}
-		result = append(result, res)
-	}
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(result)
 }
 
 func (h *carthandler) CreateCart(w http.ResponseWriter, r *http.Request) {
@@ -64,15 +57,14 @@ func (h *carthandler) CreateCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	validate := helper.Validation(u)
+	validate := h.helper.Validation(u)
 	if len(validate) > 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		if err := json.NewEncoder(w).Encode(validate); err != nil {
-			log.Println(err.Error())
-			return
-		}
+		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": validate}
+		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
 	} else {
 		h.srvc.Insert(&u)
+		res := map[string]interface{}{"message": "Data Successfully Inserted", "is_success": true, "status": "201"}
+		h.helper.ResponseJSON(w, http.StatusOK, res)
 	}
 
 }
@@ -82,23 +74,16 @@ func (h *carthandler) GetCartbyId(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	person, err := h.srvc.GetById(id)
 	if err != nil {
-		log.Println(err.Error())
-		return
+		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
+		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
+	} else {
+		res := map[string]interface{}{"message": "OK", "is_success": true, "status": "200", "data": person}
+		h.helper.ResponseJSON(w, http.StatusOK, res)
 	}
-	result := []response.Cart{}
-
-	for _, v := range person {
-		res := response.Cart{
-			Id:        v.Id,
-			Cart_name: v.Cart_name,
-		}
-		result = append(result, res)
-	}
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(result)
 }
 
 func (h *carthandler) UpdateCart(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Content-Type", "application/json")
 	id := r.URL.Query().Get("id")
 
 	var u entity.Cart
@@ -106,20 +91,18 @@ func (h *carthandler) UpdateCart(w http.ResponseWriter, r *http.Request) {
 		log.Println(err.Error())
 	}
 
-	validate := helper.Validation(u)
+	validate := h.helper.Validation(u)
 	if len(validate) > 0 {
-		w.Header().Add("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		if err := json.NewEncoder(w).Encode(validate); err != nil {
-			log.Println(err.Error())
-			return
-		}
+		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": validate}
+		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
 	} else {
-		h.srvc.Update(id, &u)
-		w.Header().Add("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(&u); err != nil {
-			log.Println(err.Error())
-			return
+		_, err := h.srvc.Update(id, &u)
+		if err != nil {
+			res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
+			h.helper.ResponseJSON(w, http.StatusBadRequest, res)
+		} else {
+			res := map[string]interface{}{"message": "OK", "is_success": true, "status": "200", "data": u.CartName}
+			h.helper.ResponseJSON(w, http.StatusOK, res)
 		}
 	}
 }
@@ -127,7 +110,12 @@ func (h *carthandler) UpdateCart(w http.ResponseWriter, r *http.Request) {
 func (h *carthandler) DeleteCart(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 
-	h.srvc.Delete(id)
-
-	w.WriteHeader(http.StatusOK)
+	_, err := h.srvc.Delete(id)
+	if err != nil {
+		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
+		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
+	} else {
+		res := map[string]interface{}{"message": "Data Deleted", "is_success": true, "status": "200"}
+		h.helper.ResponseJSON(w, http.StatusOK, res)
+	}
 }

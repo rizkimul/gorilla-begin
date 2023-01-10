@@ -8,9 +8,9 @@ import (
 
 type SPCartServices interface {
 	Getall() ([]response.ShoppingCart, error)
-	GetById(id string) ([]entity.ShoppingCart, error)
-	Insert(spcart *entity.ShoppingCart) (*entity.ShoppingCart, error)
-	Update(id string, spcart *entity.ShoppingCart) (int64, error)
+	GetById(id string) (entity.ShoppingCart, error)
+	Insert(spcart *entity.ShoppingCart) error
+	Update(id string, spcart *entity.ShoppingCart) error
 	Delete(id string) (int64, error)
 }
 
@@ -30,15 +30,15 @@ func (s *spcartsvc) Getall() ([]response.ShoppingCart, error) {
 	return s.spcartrepo.Getspcartall()
 }
 
-func (s *spcartsvc) GetById(id string) ([]entity.ShoppingCart, error) {
+func (s *spcartsvc) GetById(id string) (entity.ShoppingCart, error) {
 	return s.spcartrepo.GetspcartById(id)
 }
 
-func (s *spcartsvc) Insert(spcart *entity.ShoppingCart) (*entity.ShoppingCart, error) {
+func (s *spcartsvc) Insert(spcart *entity.ShoppingCart) error {
 	return s.spcartrepo.Insertspcart(spcart)
 }
 
-func (s *spcartsvc) Update(id string, spcart *entity.ShoppingCart) (int64, error) {
+func (s *spcartsvc) Update(id string, spcart *entity.ShoppingCart) error {
 	return s.spcartrepo.Updatespcart(id, spcart)
 }
 

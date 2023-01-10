@@ -7,10 +7,11 @@ import (
 
 type Services interface {
 	Getall() ([]entity.Person, error)
-	GetById(id string) ([]entity.Person, error)
+	GetById(id string) (entity.Person, error)
 	Insert(person *entity.Person) (*entity.Person, error)
 	Update(id string, person *entity.Person) (int64, error)
 	Delete(id string) (int64, error)
+	Login(name string) (entity.Person, error)
 }
 
 type svc struct {
@@ -29,7 +30,7 @@ func (s *svc) Getall() ([]entity.Person, error) {
 	return s.repo.Getuserall()
 }
 
-func (s *svc) GetById(id string) ([]entity.Person, error) {
+func (s *svc) GetById(id string) (entity.Person, error) {
 	return s.repo.GetUserById(id)
 }
 
@@ -43,4 +44,8 @@ func (s *svc) Update(id string, person *entity.Person) (int64, error) {
 
 func (s *svc) Delete(id string) (int64, error) {
 	return s.repo.DeleteUser(id)
+}
+
+func (s *svc) Login(name string) (entity.Person, error) {
+	return s.repo.Login(name)
 }
