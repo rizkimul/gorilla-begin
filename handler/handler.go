@@ -34,8 +34,6 @@ type handler struct {
 	helper helper.Helper
 }
 
-// var srvc services.Services = services.NewServices()
-
 func NewHandler(srvc services.Services, repos repository.Repository, helper helper.Helper) Handler {
 	return &handler{
 		srvc:   srvc,

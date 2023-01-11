@@ -3,11 +3,10 @@ package services
 import (
 	"github.com/rizkimul/gorilla-begin/v2/entity"
 	"github.com/rizkimul/gorilla-begin/v2/repository"
-	"github.com/rizkimul/gorilla-begin/v2/response"
 )
 
 type SPCartServices interface {
-	Getall() ([]response.ShoppingCart, error)
+	Getall() ([]entity.SpCart, error)
 	GetById(id string) (entity.ShoppingCart, error)
 	Insert(spcart *entity.ShoppingCart) error
 	Update(id string, spcart *entity.ShoppingCart) error
@@ -26,7 +25,7 @@ func NewSPCartServices(spcartrepo repository.SPCartRepository) SPCartServices {
 	}
 }
 
-func (s *spcartsvc) Getall() ([]response.ShoppingCart, error) {
+func (s *spcartsvc) Getall() ([]entity.SpCart, error) {
 	return s.spcartrepo.Getspcartall()
 }
 

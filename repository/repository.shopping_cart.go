@@ -5,11 +5,10 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/rizkimul/gorilla-begin/v2/entity"
-	"github.com/rizkimul/gorilla-begin/v2/response"
 )
 
 type SPCartRepository interface {
-	Getspcartall() ([]response.ShoppingCart, error)
+	Getspcartall() ([]entity.SpCart, error)
 	GetspcartById(id string) (entity.ShoppingCart, error)
 	Insertspcart(spcart *entity.ShoppingCart) error
 	Updatespcart(id string, spcart *entity.ShoppingCart) error
@@ -22,7 +21,8 @@ type spcartrepo struct {
 }
 
 const (
-	getspcartAll       = "SELECT a.cart_name, b.product_name, b.price, b.product_image, c.qty_product, c.total_price FROM cart a, product b, shopping_cart c where c.cart_id = a.id and c.product_id = b.id"
+	// getspcartAll       = "SELECT a.cart_name, b.product_name, b.price, b.product_image, c.qty_product, c.total_price FROM cart a, product b, shopping_cart c where c.cart_id = a.id and c.product_id = b.id"
+	getspcartAll       = "SELECT * FROM shopping_cart"
 	getspcartById      = "SELECT * FROM shopping_cart WHERE id=$1"
 	insertspcart       = "INSERT INTO shopping_cart (cart_id, product_id, qty_product, total_price) VALUES ($1, $2, $3, $4)"
 	updatespcart       = "UPDATE shopping_cart SET (cart_id, product_id, qty_product) = ($1, $2, $3) WHERE id=$4"
@@ -37,8 +37,8 @@ func NewSPCartRepository(db *sqlx.DB, prod RepositoryProduct) SPCartRepository {
 	}
 }
 
-func (r *spcartrepo) Getspcartall() ([]response.ShoppingCart, error) {
-	spcart := []response.ShoppingCart{}
+func (r *spcartrepo) Getspcartall() ([]entity.SpCart, error) {
+	spcart := []entity.SpCart{}
 	err := r.DB.Select(&spcart, getspcartAll)
 
 	return spcart, err

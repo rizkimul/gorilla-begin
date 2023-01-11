@@ -4,11 +4,14 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
+	"time"
 
 	// "strings"
 	"github.com/cloudinary/cloudinary-go/v2"
 	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 	"github.com/gorilla/schema"
+	"github.com/joho/godotenv"
 	"github.com/rizkimul/gorilla-begin/v2/entity"
 	"github.com/rizkimul/gorilla-begin/v2/helper"
 	"github.com/rizkimul/gorilla-begin/v2/repository"
@@ -64,7 +67,8 @@ func (h *productHandler) GetProducts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *productHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
-	var urlcloud = "cloudinary://475673691162386:yrcOGG9UdcYjqzruVtSq4uLWRzU@db9xlikgu"
+	_ = godotenv.Load(".env")
+	var urlcloud = os.Getenv("CLOUD_SECRET_KEY")
 	var decoder = schema.NewDecoder()
 	var product entity.Product
 	cld, _ := cloudinary.NewFromURL(urlcloud)
@@ -86,6 +90,7 @@ func (h *productHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		log.Println(err.Error())
 		return
 	}
+	product.CreatedAt = time.Now()
 	h.srvc.Insertproduct(&product)
 	res := map[string]interface{}{"message": "Data Successfully Inserted", "is_success": true, "status": "201", "data": product}
 	h.helper.ResponseJSON(w, http.StatusOK, res)

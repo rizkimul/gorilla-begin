@@ -1,11 +1,14 @@
 package routes
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/rizkimul/gorilla-begin/v2/handler"
 	"github.com/rizkimul/gorilla-begin/v2/helper"
@@ -36,6 +39,14 @@ type App struct {
 func NewRoutes() Routes {
 	return &App{}
 }
+
+var (
+	_       = godotenv.Load(".env")
+	dbUser  = os.Getenv("DATABASE_USER")
+	dbPass  = os.Getenv("DATABASE_PASSWORD")
+	dbName  = os.Getenv("DATABASE_NAME")
+	sslMode = os.Getenv("SSL_MODE")
+)
 
 var schema = `
 CREATE TABLE IF NOT EXISTS product (
@@ -69,7 +80,7 @@ CREATE TABLE IF NOT EXISTS shopping_cart (
 		)`
 
 func (a *App) Run() {
-	dsn := "user=postgres password=root dbname=db_golang sslmode=disable"
+	dsn := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=%s", dbUser, dbPass, dbName, sslMode)
 	Db, err := sqlx.Connect("postgres", dsn)
 	if err != nil {
 		log.Println(err.Error())
