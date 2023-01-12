@@ -4,14 +4,13 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	// "strings"
 	"github.com/cloudinary/cloudinary-go/v2"
 	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 	"github.com/gorilla/schema"
-	"github.com/joho/godotenv"
+	"github.com/rizkimul/gorilla-begin/v2/config"
 	"github.com/rizkimul/gorilla-begin/v2/entity"
 	"github.com/rizkimul/gorilla-begin/v2/helper"
 	"github.com/rizkimul/gorilla-begin/v2/repository"
@@ -67,11 +66,10 @@ func (h *productHandler) GetProducts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *productHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
-	_ = godotenv.Load(".env")
-	var urlcloud = os.Getenv("CLOUD_SECRET_KEY")
+	conf, _ := config.LoadConfig(".")
 	var decoder = schema.NewDecoder()
 	var product entity.Product
-	cld, _ := cloudinary.NewFromURL(urlcloud)
+	cld, _ := cloudinary.NewFromURL(conf.CloudSecretKey)
 	err := r.ParseMultipartForm(1 << 2)
 	if err != nil {
 		log.Println(err.Error())
@@ -114,7 +112,8 @@ func (h *productHandler) GetProductbyId(w http.ResponseWriter, r *http.Request) 
 
 func (h *productHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
-	var urlcloud = "cloudinary://475673691162386:yrcOGG9UdcYjqzruVtSq4uLWRzU@db9xlikgu"
+	conf, _ := config.LoadConfig(".")
+	var urlcloud = conf.CloudSecretKey
 	var decoder = schema.NewDecoder()
 	var product entity.Product
 	cld, _ := cloudinary.NewFromURL(urlcloud)
