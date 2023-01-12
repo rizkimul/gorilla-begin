@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"github.com/rizkimul/gorilla-begin/v2/config"
 	"github.com/rizkimul/gorilla-begin/v2/handler"
 	"github.com/rizkimul/gorilla-begin/v2/helper"
 	"github.com/rizkimul/gorilla-begin/v2/middleware"
 	"github.com/rizkimul/gorilla-begin/v2/repository"
 	"github.com/rizkimul/gorilla-begin/v2/services"
+	"github.com/rizkimul/gorilla-begin/v2/utils"
 )
 
 type Routes interface {
@@ -34,19 +34,12 @@ type App struct {
 	SPCartRepo    repository.SPCartRepository
 	Middleware    middleware.Middleware
 	Helper        helper.Helper
+	UtilsToken    utils.Token
 }
 
 func NewRoutes() Routes {
 	return &App{}
 }
-
-var (
-	_       = godotenv.Load(".env")
-	dbUser  = os.Getenv("DATABASE_USER")
-	dbPass  = os.Getenv("DATABASE_PASSWORD")
-	dbName  = os.Getenv("DATABASE_NAME")
-	sslMode = os.Getenv("SSL_MODE")
-)
 
 var schema = `
 CREATE TABLE IF NOT EXISTS product (
@@ -80,7 +73,8 @@ CREATE TABLE IF NOT EXISTS shopping_cart (
 		)`
 
 func (a *App) Run() {
-	dsn := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=%s", dbUser, dbPass, dbName, sslMode)
+	conf, _ := config.LoadConfig(".")
+	dsn := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=%s", conf.DatabaseUser, conf.DatabasePass, conf.DatabaseName, conf.SslMode)
 	Db, err := sqlx.Connect("postgres", dsn)
 	if err != nil {
 		log.Println(err.Error())
@@ -97,6 +91,7 @@ func (a *App) Run() {
 	a.SPCartService = services.NewSPCartServices(a.SPCartRepo)
 	a.Helper = helper.NewHelper()
 	a.Middleware = middleware.NewMiddleware(a.Helper)
+	a.UtilsToken = utils.NewUtilsToken()
 	a.SetupRouter()
 	a.Router.Use(a.Middleware.LoggingMiddleware)
 	log.Println("Starting Server")
@@ -105,7 +100,7 @@ func (a *App) Run() {
 
 func (a *App) SetupRouter() {
 	a.Router = mux.NewRouter()
-	var handlerfun handler.Handler = handler.NewHandler(a.UserService, a.Repo, a.Helper)
+	var handlerfun handler.Handler = handler.NewHandler(a.UserService, a.Repo, a.Helper, a.UtilsToken)
 	var prodhandler handler.ProductHandler = handler.NewProductHandler(a.ProdService, a.ProdRepo, a.Helper)
 	var carthandler handler.CartHandler = handler.NewCartHandler(a.CartService, a.CartRepo, a.Helper)
 	var spcarthandler handler.SPCartHandler = handler.NewSPCartHandler(a.SPCartService, a.SPCartRepo, a.Helper)

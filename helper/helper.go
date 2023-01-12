@@ -19,7 +19,7 @@ type Helper interface {
 	Validation(u interface{}) []string
 	CountTotal(qty int, price int) float64
 	HashPass(pass string) (string, error)
-	MatchPass(pass string, hash string) bool
+	MatchPass(pass string, hash string) error
 	ResponseJSON(w http.ResponseWriter, code int, payload interface{})
 	PrintData(data *[]response.Response) ([]byte, error)
 }
@@ -65,9 +65,9 @@ func (*helper) HashPass(pass string) (string, error) {
 	return string(bytes), err
 }
 
-func (*helper) MatchPass(pass string, hash string) bool {
+func (*helper) MatchPass(pass string, hash string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(pass))
-	return err == nil
+	return err
 }
 
 func (*helper) ResponseJSON(w http.ResponseWriter, code int, payload interface{}) {

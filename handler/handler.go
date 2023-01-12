@@ -4,18 +4,16 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"time"
 
 	// "strings"
 
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/rizkimul/gorilla-begin/v2/config"
 	"github.com/rizkimul/gorilla-begin/v2/entity"
 	"github.com/rizkimul/gorilla-begin/v2/helper"
 	"github.com/rizkimul/gorilla-begin/v2/repository"
 	"github.com/rizkimul/gorilla-begin/v2/response"
 	"github.com/rizkimul/gorilla-begin/v2/services"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/rizkimul/gorilla-begin/v2/utils"
 )
 
 type Handler interface {
@@ -32,18 +30,19 @@ type handler struct {
 	srvc   services.Services
 	repos  repository.Repository
 	helper helper.Helper
+	token  utils.Token
 }
 
-func NewHandler(srvc services.Services, repos repository.Repository, helper helper.Helper) Handler {
+func NewHandler(srvc services.Services, repos repository.Repository, helper helper.Helper, token utils.Token) Handler {
 	return &handler{
 		srvc:   srvc,
 		repos:  repos,
 		helper: helper,
+		token:  token,
 	}
 }
 
 func (h *handler) Login(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Content-Type", "application/json")
 	var p entity.Login
 	err := json.NewDecoder(r.Body).Decode(&p)
 	if err != nil {
@@ -60,31 +59,34 @@ func (h *handler) Login(w http.ResponseWriter, r *http.Request) {
 	} else {
 		loginRes, _ := h.srvc.Login(p.Name)
 		if loginRes == (entity.Person{}) {
-			json.NewEncoder(w).Encode("Login Failed")
+			json.NewEncoder(w).Encode("No data match")
 		} else {
-			if err := bcrypt.CompareHashAndPassword([]byte(loginRes.Password), []byte(p.Password)); err != nil {
+			if err := h.helper.MatchPass(p.Password, loginRes.Password); err != nil {
 				res := map[string]interface{}{"message": "Unauthorized", "is_success": false, "status": "401", "data": err.Error()}
 				h.helper.ResponseJSON(w, http.StatusUnauthorized, res)
 				return
 			} else {
-				expTime := time.Now().Add(time.Hour * 6)
-				claims := &config.JWTClaim{
-					Username: p.Name,
-					RegisteredClaims: jwt.RegisteredClaims{
-						ExpiresAt: jwt.NewNumericDate(expTime),
-					},
-				}
-				tokenAlgo := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-				token, err := tokenAlgo.SignedString(config.JWT_KEY)
+				conf, err := config.LoadConfig(".")
 				if err != nil {
 					res := map[string]interface{}{"message": err.Error(), "is_success": false, "status": "401"}
 					h.helper.ResponseJSON(w, http.StatusInternalServerError, res)
 					return
 				}
-
-				tokenM := map[string]interface{}{"token": token}
-				tokenString, _ := json.Marshal(tokenM)
-				w.Write([]byte(tokenString))
+				accessToken, err := h.token.CreateToken(p.Name, conf.AccessTokenExp)
+				if err != nil {
+					res := map[string]interface{}{"message": err.Error(), "is_success": false, "status": "401"}
+					h.helper.ResponseJSON(w, http.StatusInternalServerError, res)
+					return
+				}
+				refreshToken, err := h.token.CreateToken(p.Name, conf.RefreshTokenExp)
+				if err != nil {
+					res := map[string]interface{}{"message": err.Error(), "is_success": false, "status": "401"}
+					h.helper.ResponseJSON(w, http.StatusInternalServerError, res)
+					return
+				}
+				res := map[string]interface{}{"message": "Token Generated", "is_success": true, "data": map[string]string{"Access Token": accessToken, "Refresh Token": refreshToken}, "status": "200"}
+				h.helper.ResponseJSON(w, http.StatusOK, res)
+				return
 			}
 		}
 	}
