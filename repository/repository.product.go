@@ -10,8 +10,8 @@ type RepositoryProduct interface {
 	GetProductall() ([]entity.Product, error)
 	GetProductById(id string) (entity.Product, error)
 	InsertProduct(product *entity.Product) (*entity.Product, error)
-	UpdateProduct(id string, person *entity.Product) (int64, error)
-	DeleteProduct(id string) (int64, error)
+	UpdateProduct(id string, person *entity.Product) error
+	DeleteProduct(id string) error
 }
 
 type repoProduct struct {
@@ -22,7 +22,7 @@ const (
 	getProductAll  = "SELECT * FROM product"
 	getProductById = "SELECT * FROM product WHERE id=$1"
 	insertProduct  = "INSERT INTO product (product_name, product_description, price, product_image) VALUES ($1, $2, $3, $4)"
-	updateProduct  = "UPDATE product SET (product_name, product_description, price, product_image) = ($1, $2, $3, $4) WHERE id=$5"
+	updateProduct  = "UPDATE product SET (product_name, product_description, price, product_image, updated_at) = ($1, $2, $3, $4, $5) WHERE id=$6"
 	deleteProduct  = "DELETE FROM product WHERE id=$1"
 )
 
@@ -53,18 +53,14 @@ func (rp *repoProduct) InsertProduct(product *entity.Product) (*entity.Product, 
 	return product, err
 }
 
-func (rp *repoProduct) UpdateProduct(id string, product *entity.Product) (int64, error) {
-	res, err := rp.DB.Exec(updateProduct, product.ProductName, product.ProductDescription, product.Price, product.ProductImage, id)
+func (rp *repoProduct) UpdateProduct(id string, product *entity.Product) error {
+	_, err := rp.DB.Exec(updateProduct, product.ProductName, product.ProductDescription, product.Price, product.ProductImage, product.UpdatedAt, id)
 
-	rowsAfffected, err := res.RowsAffected()
-
-	return rowsAfffected, err
+	return err
 }
 
-func (rp *repoProduct) DeleteProduct(id string) (int64, error) {
-	res, err := rp.DB.Exec(deleteProduct, id)
+func (rp *repoProduct) DeleteProduct(id string) error {
+	_, err := rp.DB.Exec(deleteProduct, id)
 
-	RowsAffected, err := res.RowsAffected()
-
-	return RowsAffected, err
+	return err
 }

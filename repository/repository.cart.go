@@ -47,7 +47,7 @@ func (r *cartrepo) GetcartById(id string) (entity.Cart, error) {
 	var err error
 	cart := entity.Cart{}
 
-	spCart := []entity.SpCart{}
+	spCart := []entity.ShoppingCart{}
 
 	err = r.DB.Get(&cart, getcartById, id)
 

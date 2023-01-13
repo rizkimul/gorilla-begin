@@ -1,8 +1,7 @@
 package response
 
 type Response struct {
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	Email       string `json:"email"`
-	PhoneNumber string `json:"phone"`
+	Id    string `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }

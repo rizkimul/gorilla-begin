@@ -46,16 +46,17 @@ func (h *productHandler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
 		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
+		return
 	} else {
 		result := []response.Product{}
 
 		for _, v := range product {
 			res := response.Product{
-				Id:                  v.Id,
-				Product_name:        v.ProductName,
-				Product_description: v.ProductDescription,
-				Product_image:       v.ProductImage,
-				Price:               v.Price,
+				Id:                 v.Id,
+				ProductName:        v.ProductName,
+				ProductDescription: v.ProductDescription,
+				ProductImage:       v.ProductImage,
+				Price:              v.Price,
 			}
 			result = append(result, res)
 		}
@@ -90,7 +91,14 @@ func (h *productHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 	product.CreatedAt = time.Now()
 	h.srvc.Insertproduct(&product)
-	res := map[string]interface{}{"message": "Data Successfully Inserted", "is_success": true, "status": "201", "data": product}
+	respond := response.Product{
+		Id:                 product.Id,
+		ProductName:        product.ProductName,
+		ProductDescription: product.ProductDescription,
+		Price:              product.Price,
+		ProductImage:       product.ProductImage,
+	}
+	res := map[string]interface{}{"message": "Data Successfully Inserted", "is_success": true, "status": "201", "data": respond}
 	h.helper.ResponseJSON(w, http.StatusOK, res)
 
 }
@@ -99,12 +107,19 @@ func (h *productHandler) GetProductbyId(w http.ResponseWriter, r *http.Request) 
 	w.Header().Add("Content-Type", "application/json")
 	id := r.URL.Query().Get("id")
 	product, err := h.srvc.GetproductById(id)
+	respond := response.Product{
+		Id:                 product.Id,
+		ProductName:        product.ProductName,
+		ProductDescription: product.ProductDescription,
+		Price:              product.Price,
+		ProductImage:       product.ProductImage,
+	}
 	if err != nil {
 		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
 		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
 		return
 	} else {
-		res := map[string]interface{}{"message": "OK", "is_success": true, "status": "200", "data": product}
+		res := map[string]interface{}{"message": "OK", "is_success": true, "status": "200", "data": respond}
 		h.helper.ResponseJSON(w, http.StatusOK, res)
 		return
 	}
@@ -131,17 +146,25 @@ func (h *productHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	resp, _ := cld.Upload.Upload(ctx, file, uploader.UploadParams{})
 	err = decoder.Decode(&product, r.PostForm)
 	product.ProductImage = resp.SecureURL
+	product.UpdatedAt = time.Now()
 	if err != nil {
 		log.Println(err.Error())
 		return
 	}
-	_, err = h.srvc.Updateproduct(id, &product)
+	err = h.srvc.Updateproduct(id, &product)
+	respond := response.Product{
+		Id:                 product.Id,
+		ProductName:        product.ProductName,
+		ProductDescription: product.ProductDescription,
+		Price:              product.Price,
+		ProductImage:       product.ProductImage,
+	}
 	if err != nil {
 		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
 		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
 		return
 	} else {
-		res := map[string]interface{}{"message": "Data Updated", "is_success": true, "status": "200", "data": product}
+		res := map[string]interface{}{"message": "Data Updated", "is_success": true, "status": "200", "data": respond}
 		h.helper.ResponseJSON(w, http.StatusOK, res)
 		return
 	}
@@ -150,7 +173,7 @@ func (h *productHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 func (h *productHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 
-	_, err := h.srvc.Deleteproduct(id)
+	err := h.srvc.Deleteproduct(id)
 	if err != nil {
 		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
 		h.helper.ResponseJSON(w, http.StatusBadRequest, res)

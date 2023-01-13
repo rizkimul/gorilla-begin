@@ -21,8 +21,8 @@ type repo struct {
 const (
 	getUserAll    = "SELECT * FROM person"
 	getUserById   = "SELECT * FROM person WHERE id=$1"
-	insertUser    = "INSERT INTO person (name, email, password, phonenumber) VALUES ($1, $2, $3, $4)"
-	updateUser    = "UPDATE person SET (name, email, password, phonenumber) = ($1, $2, $3, $4) WHERE id=$5"
+	insertUser    = "INSERT INTO person (name, email, password) VALUES ($1, $2, $3)"
+	updateUser    = "UPDATE person SET (name, email, password, updated_at) = ($1, $2, $3, $4) WHERE id=$5"
 	deleteUser    = "DELETE FROM person WHERE id=$1"
 	getUserbyName = "SELECT * FROM person WHERE name=$1"
 )
@@ -49,13 +49,13 @@ func (r *repo) GetUserById(id string) (entity.Person, error) {
 
 func (r *repo) InsertUser(person *entity.Person) (*entity.Person, error) {
 	var id string
-	err := r.DB.QueryRow(insertUser, person.Name, person.Email, person.Password, person.PhoneNumber).Scan(&id)
+	err := r.DB.QueryRow(insertUser, person.Name, person.Email, person.Password).Scan(&id)
 
 	return person, err
 }
 
 func (r *repo) UpdateUser(id string, person *entity.Person) (int64, error) {
-	res, err := r.DB.Exec(updateUser, person.Name, person.Email, person.Password, person.PhoneNumber, id)
+	res, err := r.DB.Exec(updateUser, person.Name, person.Email, person.Password, person.UpdatedAt, id)
 
 	rowsAfffected, err := res.RowsAffected()
 

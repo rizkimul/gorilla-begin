@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	// "strings"
 
@@ -59,7 +60,9 @@ func (h *handler) Login(w http.ResponseWriter, r *http.Request) {
 	} else {
 		loginRes, _ := h.srvc.Login(p.Name)
 		if loginRes == (entity.Person{}) {
-			json.NewEncoder(w).Encode("No data match")
+			res := map[string]interface{}{"message": "No Data Match", "is_success": false, "status": "400"}
+			h.helper.ResponseJSON(w, http.StatusBadRequest, res)
+			return
 		} else {
 			if err := h.helper.MatchPass(p.Password, loginRes.Password); err != nil {
 				res := map[string]interface{}{"message": "Unauthorized", "is_success": false, "status": "401", "data": err.Error()}
@@ -105,10 +108,9 @@ func (h *handler) GetUsers(w http.ResponseWriter, r *http.Request) {
 
 		for _, v := range person {
 			res := response.Response{
-				Id:          v.Id,
-				Name:        v.Name,
-				Email:       v.Email,
-				PhoneNumber: v.PhoneNumber,
+				Id:    v.Id,
+				Name:  v.Name,
+				Email: v.Email,
 			}
 			result = append(result, res)
 		}
@@ -152,10 +154,9 @@ func (h *handler) GetUserbyId(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		result := response.Response{
-			Id:          person.Id,
-			Name:        person.Name,
-			Email:       person.Email,
-			PhoneNumber: person.PhoneNumber,
+			Id:    person.Id,
+			Name:  person.Name,
+			Email: person.Email,
 		}
 		res := map[string]interface{}{"message": "OK", "is_success": true, "status": "200", "data": result}
 		h.helper.ResponseJSON(w, http.StatusOK, res)
@@ -177,13 +178,16 @@ func (h *handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
 		return
 	} else {
+		u.UpdatedAt = time.Now()
+		passhash, _ := h.helper.HashPass(u.Password)
+		u.Password = passhash
 		_, err := h.srvc.Update(id, &u)
 		if err != nil {
 			res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
 			h.helper.ResponseJSON(w, http.StatusBadRequest, res)
 			return
 		} else {
-			res := map[string]interface{}{"message": "Data Updated", "is_success": true, "status": "200", "data": u}
+			res := map[string]interface{}{"message": "Data Updated", "is_success": true, "status": "200"}
 			h.helper.ResponseJSON(w, http.StatusOK, res)
 			return
 		}
@@ -218,10 +222,9 @@ func (h *handler) PrinData(w http.ResponseWriter, r *http.Request) {
 
 	for _, v := range person {
 		res := response.Response{
-			Id:          v.Id,
-			Name:        v.Name,
-			Email:       v.Email,
-			PhoneNumber: v.PhoneNumber,
+			Id:    v.Id,
+			Name:  v.Name,
+			Email: v.Email,
 		}
 		result = append(result, res)
 	}

@@ -1,8 +1,7 @@
 package response
 
 type Cart struct {
-	Status     int         `json:"status"`
-	Is_success bool        `json:"is_success"`
-	Message    string      `json:"message"`
-	Data       interface{} `json:"data"`
+	Id           int            `json:"id" db:"id"`
+	CartName     string         `json:"cartName" db:"cart_name"`
+	ShoppingCart []ShoppingCart `json:"shoppingCart"`
 }

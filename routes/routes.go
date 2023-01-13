@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS product (
 		price FLOAT,
 		product_image VARCHAR(1000),
 		created_at TIMESTAMP default CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP default CURRENT_TIMESTAMP,
 		PRIMARY KEY(id)
 		);
 
@@ -70,6 +71,15 @@ CREATE TABLE IF NOT EXISTS shopping_cart (
 		CONSTRAINT fk_product
 			FOREIGN KEY(product_id)
 				REFERENCES product(id)
+		);
+
+CREATE TABLE IF NOT EXISTS person (
+		id serial,
+		name VARCHAR(50),
+		email VARCHAR(50),
+		password VARCHAR(100),
+		created_at TIMESTAMP default CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP default CURRENT_TIMESTAMP
 		)`
 
 func (a *App) Run() {
@@ -102,8 +112,8 @@ func (a *App) SetupRouter() {
 	a.Router = mux.NewRouter()
 	var handlerfun handler.Handler = handler.NewHandler(a.UserService, a.Repo, a.Helper, a.UtilsToken)
 	var prodhandler handler.ProductHandler = handler.NewProductHandler(a.ProdService, a.ProdRepo, a.Helper)
-	var carthandler handler.CartHandler = handler.NewCartHandler(a.CartService, a.CartRepo, a.Helper)
-	var spcarthandler handler.SPCartHandler = handler.NewSPCartHandler(a.SPCartService, a.SPCartRepo, a.Helper)
+	var carthandler handler.CartHandler = handler.NewCartHandler(a.CartService, a.CartRepo, a.Helper, a.ProdService)
+	var spcarthandler handler.SPCartHandler = handler.NewSPCartHandler(a.SPCartService, a.SPCartRepo, a.Helper, a.ProdService, a.CartService)
 
 	router := a.Router.PathPrefix("/users").Subrouter()
 	router.Path("/getall").HandlerFunc(handlerfun.GetUsers).Methods("GET")

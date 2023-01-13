@@ -12,7 +12,7 @@ type SPCartRepository interface {
 	GetspcartById(id string) (entity.ShoppingCart, error)
 	Insertspcart(spcart *entity.ShoppingCart) error
 	Updatespcart(id string, spcart *entity.ShoppingCart) error
-	Deletespcart(id string) (int64, error)
+	Deletespcart(id string) error
 }
 
 type spcartrepo struct {
@@ -25,7 +25,7 @@ const (
 	getspcartAll       = "SELECT * FROM shopping_cart"
 	getspcartById      = "SELECT * FROM shopping_cart WHERE id=$1"
 	insertspcart       = "INSERT INTO shopping_cart (cart_id, product_id, qty_product, total_price) VALUES ($1, $2, $3, $4)"
-	updatespcart       = "UPDATE shopping_cart SET (cart_id, product_id, qty_product) = ($1, $2, $3) WHERE id=$4"
+	updatespcart       = "UPDATE shopping_cart SET (cart_id, product_id, qty_product, total_price) = ($1, $2, $3, $4) WHERE id=$5"
 	deletespcart       = "DELETE FROM shopping_cart WHERE id=$1"
 	getProductToSpCart = "SELECT id, product_name, product_description, price, product_image, created_at FROM product WHERE id=$1"
 )
@@ -66,15 +66,13 @@ func (r *spcartrepo) Insertspcart(spcart *entity.ShoppingCart) error {
 }
 
 func (r *spcartrepo) Updatespcart(id string, spcart *entity.ShoppingCart) error {
-	_, err := r.DB.Exec(updatespcart, spcart.CartId, spcart.ProductId, spcart.QtyProduct, id)
+	_, err := r.DB.Exec(updatespcart, spcart.CartId, spcart.ProductId, spcart.QtyProduct, spcart.TotalPrice, id)
 
 	return err
 }
 
-func (r *spcartrepo) Deletespcart(id string) (int64, error) {
-	res, err := r.DB.Exec(deletespcart, id)
+func (r *spcartrepo) Deletespcart(id string) error {
+	_, err := r.DB.Exec(deletespcart, id)
 
-	RowsAffected, err := res.RowsAffected()
-
-	return RowsAffected, err
+	return err
 }

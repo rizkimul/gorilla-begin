@@ -9,8 +9,8 @@ type ProductServices interface {
 	Getallproduct() ([]entity.Product, error)
 	GetproductById(id string) (entity.Product, error)
 	Insertproduct(product *entity.Product) (*entity.Product, error)
-	Updateproduct(id string, product *entity.Product) (int64, error)
-	Deleteproduct(id string) (int64, error)
+	Updateproduct(id string, product *entity.Product) error
+	Deleteproduct(id string) error
 }
 
 type prdctsvc struct {
@@ -37,10 +37,10 @@ func (s *prdctsvc) Insertproduct(product *entity.Product) (*entity.Product, erro
 	return s.prdctrepo.InsertProduct(product)
 }
 
-func (s *prdctsvc) Updateproduct(id string, product *entity.Product) (int64, error) {
+func (s *prdctsvc) Updateproduct(id string, product *entity.Product) error {
 	return s.prdctrepo.UpdateProduct(id, product)
 }
 
-func (s *prdctsvc) Deleteproduct(id string) (int64, error) {
+func (s *prdctsvc) Deleteproduct(id string) error {
 	return s.prdctrepo.DeleteProduct(id)
 }

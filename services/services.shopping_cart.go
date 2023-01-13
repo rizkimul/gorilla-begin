@@ -10,7 +10,7 @@ type SPCartServices interface {
 	GetById(id string) (entity.ShoppingCart, error)
 	Insert(spcart *entity.ShoppingCart) error
 	Update(id string, spcart *entity.ShoppingCart) error
-	Delete(id string) (int64, error)
+	Delete(id string) error
 }
 
 type spcartsvc struct {
@@ -41,6 +41,6 @@ func (s *spcartsvc) Update(id string, spcart *entity.ShoppingCart) error {
 	return s.spcartrepo.Updatespcart(id, spcart)
 }
 
-func (s *spcartsvc) Delete(id string) (int64, error) {
+func (s *spcartsvc) Delete(id string) error {
 	return s.spcartrepo.Deletespcart(id)
 }
