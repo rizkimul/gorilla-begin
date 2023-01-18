@@ -7,10 +7,10 @@ import (
 
 type CartRepository interface {
 	Getcartall() ([]entity.Cart, error)
-	GetcartById(id string) (entity.Cart, error)
-	Insertcart(cart *entity.Cart) (*entity.Cart, error)
-	Updatecart(id string, cart *entity.Cart) (int64, error)
-	Deletecart(id string) (int64, error)
+	GetcartById(id int) (entity.Cart, error)
+	Insertcart(cart *entity.Cart) error
+	Updatecart(id int, cart *entity.Cart) error
+	Deletecart(id int) error
 }
 
 type cartrepo struct {
@@ -43,7 +43,7 @@ func (r *cartrepo) Getcartall() ([]entity.Cart, error) {
 	return cart, err
 }
 
-func (r *cartrepo) GetcartById(id string) (entity.Cart, error) {
+func (r *cartrepo) GetcartById(id int) (entity.Cart, error) {
 	var err error
 	cart := entity.Cart{}
 
@@ -58,25 +58,20 @@ func (r *cartrepo) GetcartById(id string) (entity.Cart, error) {
 	return cart, err
 }
 
-func (r *cartrepo) Insertcart(cart *entity.Cart) (*entity.Cart, error) {
-	var id string
-	err := r.DB.QueryRow(insertcart, cart.CartName).Scan(&id)
+func (r *cartrepo) Insertcart(cart *entity.Cart) error {
+	_, err := r.DB.Exec(insertcart, cart.CartName)
 
-	return cart, err
+	return err
 }
 
-func (r *cartrepo) Updatecart(id string, cart *entity.Cart) (int64, error) {
-	res, err := r.DB.Exec(updatecart, cart.CartName, id)
+func (r *cartrepo) Updatecart(id int, cart *entity.Cart) error {
+	_, err := r.DB.Exec(updatecart, cart.CartName, id)
 
-	rowsAfffected, err := res.RowsAffected()
-
-	return rowsAfffected, err
+	return err
 }
 
-func (r *cartrepo) Deletecart(id string) (int64, error) {
-	res, err := r.DB.Exec(deletecart, id)
+func (r *cartrepo) Deletecart(id int) error {
+	_, err := r.DB.Exec(deletecart, id)
 
-	RowsAffected, err := res.RowsAffected()
-
-	return RowsAffected, err
+	return err
 }

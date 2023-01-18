@@ -91,17 +91,17 @@ func (a *App) Run() {
 		return
 	}
 	Db.MustExec(schema)
+	a.Helper = helper.NewHelper()
+	a.UtilsToken = utils.NewUtilsToken()
 	a.Repo = repository.NewRepository(Db)
 	a.ProdRepo = repository.NewProductRepository(Db)
 	a.SPCartRepo = repository.NewSPCartRepository(Db, a.ProdRepo)
 	a.CartRepo = repository.NewCartRepository(Db, a.SPCartRepo, a.ProdRepo)
-	a.UserService = services.NewServices(a.Repo)
+	a.UserService = services.NewServices(a.Repo, a.Helper, a.UtilsToken)
 	a.ProdService = services.NewProductServices(a.ProdRepo)
 	a.CartService = services.NewCartServices(a.CartRepo, a.SPCartRepo)
-	a.SPCartService = services.NewSPCartServices(a.SPCartRepo)
-	a.Helper = helper.NewHelper()
+	a.SPCartService = services.NewSPCartServices(a.SPCartRepo, a.Helper, a.ProdService, a.CartService)
 	a.Middleware = middleware.NewMiddleware(a.Helper)
-	a.UtilsToken = utils.NewUtilsToken()
 	a.SetupRouter()
 	a.Router.Use(a.Middleware.LoggingMiddleware)
 	log.Println("Starting Server")
@@ -110,7 +110,7 @@ func (a *App) Run() {
 
 func (a *App) SetupRouter() {
 	a.Router = mux.NewRouter()
-	var handlerfun handler.Handler = handler.NewHandler(a.UserService, a.Repo, a.Helper, a.UtilsToken)
+	var handlerfun handler.Handler = handler.NewHandler(a.UserService, a.Repo, a.Helper)
 	var prodhandler handler.ProductHandler = handler.NewProductHandler(a.ProdService, a.ProdRepo, a.Helper)
 	var carthandler handler.CartHandler = handler.NewCartHandler(a.CartService, a.CartRepo, a.Helper, a.ProdService)
 	var spcarthandler handler.SPCartHandler = handler.NewSPCartHandler(a.SPCartService, a.SPCartRepo, a.Helper, a.ProdService, a.CartService)

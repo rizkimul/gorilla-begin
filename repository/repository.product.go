@@ -8,10 +8,10 @@ import (
 
 type RepositoryProduct interface {
 	GetProductall() ([]entity.Product, error)
-	GetProductById(id string) (entity.Product, error)
-	InsertProduct(product *entity.Product) (*entity.Product, error)
-	UpdateProduct(id string, person *entity.Product) error
-	DeleteProduct(id string) error
+	GetProductById(id int) (entity.Product, error)
+	InsertProduct(product *entity.Product) error
+	UpdateProduct(id int, person *entity.Product) error
+	DeleteProduct(id int) error
 }
 
 type repoProduct struct {
@@ -39,27 +39,26 @@ func (rp *repoProduct) GetProductall() ([]entity.Product, error) {
 	return product, err
 }
 
-func (rp *repoProduct) GetProductById(id string) (entity.Product, error) {
+func (rp *repoProduct) GetProductById(id int) (entity.Product, error) {
 	product := entity.Product{}
 
 	err := rp.DB.Get(&product, getProductById, id)
 	return product, err
 }
 
-func (rp *repoProduct) InsertProduct(product *entity.Product) (*entity.Product, error) {
-	var id string
-	err := rp.DB.QueryRow(insertProduct, product.ProductName, product.ProductDescription, product.Price, product.ProductImage).Scan(&id)
+func (rp *repoProduct) InsertProduct(product *entity.Product) error {
+	_, err := rp.DB.Exec(insertProduct, product.ProductName, product.ProductDescription, product.Price, product.ProductImage)
 
-	return product, err
+	return err
 }
 
-func (rp *repoProduct) UpdateProduct(id string, product *entity.Product) error {
+func (rp *repoProduct) UpdateProduct(id int, product *entity.Product) error {
 	_, err := rp.DB.Exec(updateProduct, product.ProductName, product.ProductDescription, product.Price, product.ProductImage, product.UpdatedAt, id)
 
 	return err
 }
 
-func (rp *repoProduct) DeleteProduct(id string) error {
+func (rp *repoProduct) DeleteProduct(id int) error {
 	_, err := rp.DB.Exec(deleteProduct, id)
 
 	return err

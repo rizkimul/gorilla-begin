@@ -7,10 +7,10 @@ import (
 
 type CartServices interface {
 	Getall() ([]entity.Cart, error)
-	GetById(id string) (entity.Cart, error)
-	Insert(cart *entity.Cart) (*entity.Cart, error)
-	Update(id string, cart *entity.Cart) (int64, error)
-	Delete(id string) (int64, error)
+	GetById(id int) (entity.Cart, error)
+	Insert(cart *entity.Cart) error
+	Update(id int, cart *entity.Cart) error
+	Delete(id int) error
 }
 
 type cartsvc struct {
@@ -31,18 +31,18 @@ func (s *cartsvc) Getall() ([]entity.Cart, error) {
 	return s.cartrepo.Getcartall()
 }
 
-func (s *cartsvc) GetById(id string) (entity.Cart, error) {
+func (s *cartsvc) GetById(id int) (entity.Cart, error) {
 	return s.cartrepo.GetcartById(id)
 }
 
-func (s *cartsvc) Insert(cart *entity.Cart) (*entity.Cart, error) {
+func (s *cartsvc) Insert(cart *entity.Cart) error {
 	return s.cartrepo.Insertcart(cart)
 }
 
-func (s *cartsvc) Update(id string, person *entity.Cart) (int64, error) {
+func (s *cartsvc) Update(id int, person *entity.Cart) error {
 	return s.cartrepo.Updatecart(id, person)
 }
 
-func (s *cartsvc) Delete(id string) (int64, error) {
+func (s *cartsvc) Delete(id int) error {
 	return s.cartrepo.Deletecart(id)
 }

@@ -1,18 +1,16 @@
 package repository
 
 import (
-	"strconv"
-
 	"github.com/jmoiron/sqlx"
 	"github.com/rizkimul/gorilla-begin/v2/entity"
 )
 
 type SPCartRepository interface {
 	Getspcartall() ([]entity.SpCart, error)
-	GetspcartById(id string) (entity.ShoppingCart, error)
+	GetspcartById(id int) (entity.ShoppingCart, error)
 	Insertspcart(spcart *entity.ShoppingCart) error
-	Updatespcart(id string, spcart *entity.ShoppingCart) error
-	Deletespcart(id string) error
+	Updatespcart(id int, spcart *entity.ShoppingCart) error
+	Deletespcart(id int) error
 }
 
 type spcartrepo struct {
@@ -44,34 +42,31 @@ func (r *spcartrepo) Getspcartall() ([]entity.SpCart, error) {
 	return spcart, err
 }
 
-func (r *spcartrepo) GetspcartById(id string) (entity.ShoppingCart, error) {
+func (r *spcartrepo) GetspcartById(id int) (entity.ShoppingCart, error) {
 	var err error
 
 	spcart := entity.ShoppingCart{}
 
 	err = r.DB.Get(&spcart, getspcartById, id)
 
-	productId := strconv.Itoa(spcart.ProductId)
-
-	spcart.Product, _ = r.prod.GetProductById(productId)
+	spcart.Product, _ = r.prod.GetProductById(spcart.ProductId)
 
 	return spcart, err
 }
 
 func (r *spcartrepo) Insertspcart(spcart *entity.ShoppingCart) error {
-	var id string
-	err := r.DB.QueryRow(insertspcart, spcart.CartId, spcart.ProductId, spcart.QtyProduct, spcart.TotalPrice).Scan(&id)
+	_, err := r.DB.Exec(insertspcart, spcart.CartId, spcart.ProductId, spcart.QtyProduct, spcart.TotalPrice)
 
 	return err
 }
 
-func (r *spcartrepo) Updatespcart(id string, spcart *entity.ShoppingCart) error {
+func (r *spcartrepo) Updatespcart(id int, spcart *entity.ShoppingCart) error {
 	_, err := r.DB.Exec(updatespcart, spcart.CartId, spcart.ProductId, spcart.QtyProduct, spcart.TotalPrice, id)
 
 	return err
 }
 
-func (r *spcartrepo) Deletespcart(id string) error {
+func (r *spcartrepo) Deletespcart(id int) error {
 	_, err := r.DB.Exec(deletespcart, id)
 
 	return err

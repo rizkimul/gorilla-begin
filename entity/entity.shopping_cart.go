@@ -1,7 +1,7 @@
 package entity
 
 type ShoppingCart struct {
-	Id         int
+	Id         int     `json:"id" db:"id"`
 	CartId     int     `json:"cart_id" validate:"required" db:"cart_id"`
 	ProductId  int     `json:"product_id" validate:"required" db:"product_id"`
 	Product    Product `json:"product"`

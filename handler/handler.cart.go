@@ -67,18 +67,22 @@ func (h *carthandler) CreateCart(w http.ResponseWriter, r *http.Request) {
 		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": validate}
 		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
 		return
-	} else {
-		h.srvc.Insert(&u)
-		res := map[string]interface{}{"message": "Data Successfully Inserted", "is_success": true, "status": "201"}
-		h.helper.ResponseJSON(w, http.StatusOK, res)
+	}
+	err := h.srvc.Insert(&u)
+	if err != nil {
+		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
+		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
 		return
 	}
+	res := map[string]interface{}{"message": "Data Successfully Inserted", "is_success": true, "status": "201"}
+	h.helper.ResponseJSON(w, http.StatusOK, res)
 
 }
 
 func (h *carthandler) GetCartbyId(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
-	id := r.URL.Query().Get("id")
+	param := r.URL.Query().Get("id")
+	id, _ := strconv.Atoi(param)
 	cart, err := h.srvc.GetById(id)
 	if err != nil {
 		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
@@ -87,8 +91,7 @@ func (h *carthandler) GetCartbyId(w http.ResponseWriter, r *http.Request) {
 	}
 	spCart := []entity.ShoppingCart{}
 	for _, v := range cart.ShoppingCarts {
-		productId := strconv.Itoa(v.ProductId)
-		v.Product, _ = h.prodSrvc.GetproductById(productId)
+		v.Product, _ = h.prodSrvc.GetproductById(v.ProductId)
 		resp := entity.ShoppingCart{
 			Id:         v.Id,
 			CartId:     v.CartId,
@@ -100,20 +103,13 @@ func (h *carthandler) GetCartbyId(w http.ResponseWriter, r *http.Request) {
 		spCart = append(spCart, resp)
 	}
 	cart.ShoppingCarts = spCart
-	if err != nil {
-		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
-		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
-		return
-	} else {
-		res := map[string]interface{}{"message": "OK", "is_success": true, "status": "200", "data": cart}
-		h.helper.ResponseJSON(w, http.StatusOK, res)
-		return
-	}
+	res := map[string]interface{}{"message": "OK", "is_success": true, "status": "200", "data": cart}
+	h.helper.ResponseJSON(w, http.StatusOK, res)
 }
 
 func (h *carthandler) UpdateCart(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Content-Type", "application/json")
-	id := r.URL.Query().Get("id")
+	param := r.URL.Query().Get("id")
+	id, _ := strconv.Atoi(param)
 
 	var u entity.Cart
 	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
@@ -126,31 +122,27 @@ func (h *carthandler) UpdateCart(w http.ResponseWriter, r *http.Request) {
 		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": validate}
 		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
 		return
-	} else {
-		_, err := h.srvc.Update(id, &u)
-		if err != nil {
-			res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
-			h.helper.ResponseJSON(w, http.StatusBadRequest, res)
-			return
-		} else {
-			res := map[string]interface{}{"message": "Data Updated", "is_success": true, "status": "200"}
-			h.helper.ResponseJSON(w, http.StatusOK, res)
-			return
-		}
 	}
-}
-
-func (h *carthandler) DeleteCart(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
-
-	_, err := h.srvc.Delete(id)
+	err := h.srvc.Update(id, &u)
 	if err != nil {
 		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
 		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
 		return
-	} else {
-		res := map[string]interface{}{"message": "Data Deleted", "is_success": true, "status": "200"}
-		h.helper.ResponseJSON(w, http.StatusOK, res)
+	}
+	res := map[string]interface{}{"message": "Data Updated", "is_success": true, "status": "200"}
+	h.helper.ResponseJSON(w, http.StatusOK, res)
+}
+
+func (h *carthandler) DeleteCart(w http.ResponseWriter, r *http.Request) {
+	param := r.URL.Query().Get("id")
+	id, _ := strconv.Atoi(param)
+
+	err := h.srvc.Delete(id)
+	if err != nil {
+		res := map[string]interface{}{"message": "Bad Request", "is_success": false, "status": "400", "data": err.Error()}
+		h.helper.ResponseJSON(w, http.StatusBadRequest, res)
 		return
 	}
+	res := map[string]interface{}{"message": "Data Deleted", "is_success": true, "status": "200"}
+	h.helper.ResponseJSON(w, http.StatusOK, res)
 }

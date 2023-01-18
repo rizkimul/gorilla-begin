@@ -8,7 +8,7 @@ import (
 )
 
 type Token interface {
-	CreateToken(username string, ttl time.Duration) (string, error)
+	CreateToken(ttl time.Duration) (string, error)
 }
 
 type token struct{}
@@ -17,10 +17,9 @@ func NewUtilsToken() Token {
 	return &token{}
 }
 
-func (*token) CreateToken(username string, ttl time.Duration) (string, error) {
+func (*token) CreateToken(ttl time.Duration) (string, error) {
 	expTime := time.Now().UTC()
 	claims := &config.JWTClaim{
-		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expTime.Add(ttl)),
 		},

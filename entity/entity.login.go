@@ -1,6 +1,6 @@
 package entity
 
 type Login struct {
-	Name     string `json:"name" validate:"required,alpha"`
+	Email    string `json:"email" validate:"required"`
 	Password string `json:"password" validate:"required"`
 }
